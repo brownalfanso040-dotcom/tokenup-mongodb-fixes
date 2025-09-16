@@ -73,7 +73,7 @@ export interface LaunchedToken {
   name: string;
   symbol: string;
   mintAddress: string;
-  network: 'mainnet' | 'devnet';
+  network: 'mainnet' | 'testnet';
   timestamp: number;
   creator?: string;
   description?: string;
@@ -107,7 +107,7 @@ export interface LaunchedToken {
 
 export interface TokenAnalytics {
   mintAddress: string;
-  network: 'mainnet' | 'devnet';
+  network: 'mainnet' | 'testnet';
   holders: number;
   transactions24h: number;
   volume24h: number;

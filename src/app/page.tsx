@@ -16,18 +16,18 @@ function TokenSuccessView({ mintAddress, setMintAddress }: { mintAddress: string
   const { network } = useNetwork();
 
   const getExplorerUrl = (address: string, type: 'address' | 'token' = 'address') => {
-    const baseUrl = network === 'devnet' 
-      ? 'https://explorer.solana.com'
-      : 'https://explorer.solana.com';
-    const cluster = network === 'devnet' ? '?cluster=devnet' : '';
+    const baseUrl = network === 'testnet'
+    ? 'https://explorer.solana.com?cluster=testnet'
+    : 'https://explorer.solana.com';
+  const cluster = network === 'testnet' ? '?cluster=testnet' : '';
     return `${baseUrl}/${type}/${address}${cluster}`;
   };
 
   const getSolscanUrl = (address: string) => {
-    const baseUrl = network === 'devnet'
+    const baseUrl = network === 'testnet'
       ? 'https://solscan.io'
       : 'https://solscan.io';
-    const cluster = network === 'devnet' ? '?cluster=devnet' : '';
+    const cluster = network === 'testnet' ? '?cluster=testnet' : '';
     return `${baseUrl}/token/${address}${cluster}`;
   };
 

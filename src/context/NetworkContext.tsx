@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 
-export type NetworkType = 'mainnet' | 'devnet';
+export type NetworkType = 'mainnet' | 'testnet';
 
 interface NetworkContextType {
   network: NetworkType;
@@ -23,11 +23,11 @@ const getNetworkConfig = (network: NetworkType) => {
         wsUrl: process.env.NEXT_PUBLIC_SOLANA_MAINNET_WS_URL || 'wss://api.mainnet-beta.solana.com',
         walletAdapterNetwork: WalletAdapterNetwork.Mainnet
       };
-    case 'devnet':
+    case 'testnet':
       return {
-        rpcUrl: process.env.NEXT_PUBLIC_SOLANA_DEVNET_RPC_URL || 'https://api.devnet.solana.com',
-        wsUrl: process.env.NEXT_PUBLIC_SOLANA_DEVNET_WS_URL || 'wss://api.devnet.solana.com',
-        walletAdapterNetwork: WalletAdapterNetwork.Devnet
+        rpcUrl: process.env.NEXT_PUBLIC_SOLANA_TESTNET_RPC_URL || 'https://api.testnet.solana.com',
+        wsUrl: process.env.NEXT_PUBLIC_SOLANA_TESTNET_WS_URL || 'wss://api.testnet.solana.com',
+        walletAdapterNetwork: WalletAdapterNetwork.Testnet
       };
     default:
       return {
@@ -45,7 +45,7 @@ export function NetworkProvider({ children }: { children: ReactNode }) {
   // Load network preference from localStorage on mount
   useEffect(() => {
     const savedNetwork = localStorage.getItem('solana-network') as NetworkType;
-    if (savedNetwork && (savedNetwork === 'mainnet' || savedNetwork === 'devnet')) {
+    if (savedNetwork && (savedNetwork === 'mainnet' || savedNetwork === 'testnet')) {
       setNetworkState(savedNetwork);
     }
   }, []);

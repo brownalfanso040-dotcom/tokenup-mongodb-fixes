@@ -19,8 +19,8 @@ const NetworkSelector: React.FC = () => {
       borderColor: 'border-green-400/20'
     },
     {
-      id: 'devnet' as NetworkType,
-      name: 'Devnet',
+      id: 'testnet' as NetworkType,
+      name: 'Testnet',
       description: 'Test network with free SOL',
       icon: TestTube,
       color: 'text-orange-400',

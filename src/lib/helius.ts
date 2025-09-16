@@ -185,13 +185,13 @@ export class HeliusService {
   private getBaseUrl(): string {
     return this.network === 'mainnet' 
       ? 'https://api.helius.xyz' 
-      : 'https://api-devnet.helius.xyz';
+      : 'https://api-testnet.helius.xyz';
   }
 
   private getDasRpcUrl(): string {
     return this.network === 'mainnet'
       ? `https://mainnet.helius-rpc.com/?api-key=${this.apiKey}`
-      : `https://devnet.helius-rpc.com/?api-key=${this.apiKey}`;
+      : `https://testnet.helius-rpc.com/?api-key=${this.apiKey}`;
   }
 
   private getRpcUrl(): string {
@@ -199,11 +199,11 @@ export class HeliusService {
     if (!this.apiKey) {
       return this.network === 'mainnet'
         ? 'https://api.mainnet-beta.solana.com'
-        : 'https://api.devnet.solana.com';
+        : 'https://api.testnet.solana.com';
     }
     return this.network === 'mainnet'
       ? `https://mainnet.helius-rpc.com/?api-key=${this.apiKey}`
-      : `https://devnet.helius-rpc.com/?api-key=${this.apiKey}`;
+      : `https://testnet.helius-rpc.com/?api-key=${this.apiKey}`;
   }
 
   // Get enhanced connection with Helius RPC

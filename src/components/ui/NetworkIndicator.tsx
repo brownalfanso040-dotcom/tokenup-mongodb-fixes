@@ -16,8 +16,8 @@ const NetworkIndicator: React.FC = () => {
       borderColor: 'border-green-400/30',
       description: 'Live network with real SOL'
     },
-    devnet: {
-      name: 'Devnet',
+    testnet: {
+      name: 'Testnet',
       icon: TestTube,
       color: 'text-orange-400',
       bgColor: 'bg-orange-400/10',
@@ -45,7 +45,7 @@ const NetworkIndicator: React.FC = () => {
         </span>
       </div>
       
-      {network === 'devnet' && (
+      {network === 'testnet' && (
         <div className="flex items-center gap-1">
           <AlertTriangle className="w-3 h-3 text-orange-400" />
           <span className="text-xs text-orange-400 font-medium">TEST</span>

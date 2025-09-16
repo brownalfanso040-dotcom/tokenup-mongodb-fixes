@@ -105,7 +105,7 @@ export function WalletTokens({ walletAddress: initialAddress, className = '' }: 
   const openInExplorer = (address: string) => {
     const baseUrl = network === 'mainnet' 
       ? 'https://explorer.solana.com' 
-      : 'https://explorer.solana.com?cluster=devnet';
+      : 'https://explorer.solana.com?cluster=testnet';
     window.open(`${baseUrl}/address/${address}`, '_blank');
   };
 

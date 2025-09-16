@@ -566,7 +566,7 @@ const MyTokens: React.FC = () => {
                   {/* Action Buttons */}
                   <div className="flex gap-2">
                     <a
-                      href={`https://explorer.solana.com/address/${token.mint}${network === 'devnet' ? '?cluster=devnet' : ''}`}
+                      href={`https://explorer.solana.com/address/${token.mint}${network === 'testnet' ? '?cluster=testnet' : ''}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors text-center"

@@ -63,17 +63,23 @@ const TokenCreation = ({
         setCurrentProgress(currentProgress + 1);
       } else if (currentProgress === 4) {
         setIsCreating(true);
-        if (!(publicKey && connected && sendTransaction)) {
-          throw new Error(`Please connect wallet!`);
-        }
+        
+        // Create connection for both PumpFun and traditional tokens
         const connection = new Connection(rpcUrl, 'confirmed');
+        
+        // Only check connected wallet if NOT using PumpFun
+        if (!tokenMetaData.usePumpFun) {
+          if (!(publicKey && connected && sendTransaction)) {
+            throw new Error(`Please connect wallet!`);
+          }
 
-        const balance = await connection.getBalance(publicKey);
+          const balance = await connection.getBalance(publicKey);
 
-        // Check if wallet has sufficient SOL for transaction
-        const minimumBalance = 0.01 * LAMPORTS_PER_SOL; // Minimum 0.01 SOL required
-        if (balance < minimumBalance) {
-          throw new Error(`Insufficient SOL balance. You need at least 0.01 SOL to create a token. Current balance: ${(balance / LAMPORTS_PER_SOL).toFixed(4)} SOL. Please add SOL to your wallet.`);
+          // Check if wallet has sufficient SOL for transaction
+          const minimumBalance = 0.01 * LAMPORTS_PER_SOL; // Minimum 0.01 SOL required
+          if (balance < minimumBalance) {
+            throw new Error(`Insufficient SOL balance. You need at least 0.01 SOL to create a token. Current balance: ${(balance / LAMPORTS_PER_SOL).toFixed(4)} SOL. Please add SOL to your wallet.`);
+          }
         }
 
         if (!tokenMetaData.logo) {
@@ -90,46 +96,53 @@ const TokenCreation = ({
         let metadataUri: string = '';
 
         if (tokenMetaData.usePumpFun) {
-          // PumpFun token creation
-          
-          const pumpFunService = createPumpFunService(connection, network as 'mainnet' | 'testnet');
-          const mintKeypair = Keypair.generate();
-          
-          // Note: For PumpFun, we need to handle wallet signing differently
-          // The wallet adapter will handle signing, so we create a temporary keypair for the structure
-          // but the actual signing will be done through the wallet adapter
-          const tempSignerKeypair = Keypair.generate();
-          
-          const pumpFunOptions: PumpFunTokenCreationOptions = {
-            tokenMetadata: tokenMetaData,
-            network: network as 'mainnet' | 'testnet',
-            devBuyAmount: tokenMetaData.devBuyAmount || 1,
-            slippage: tokenMetaData.slippage || 10,
-            priorityFee: tokenMetaData.priorityFee || 0.0005,
-            useJitoBundling: tokenMetaData.useJitoBundling || false,
-            imageFile: tokenMetaData.logo
-          };
+          // PumpFun token creation using Lightning Transaction API
+          try {
+            // Validate network for PumpFun (they support mainnet and testnet)
+            if (!['mainnet', 'testnet'].includes(network)) {
+              throw new Error(`Invalid network for PumpFun: ${network}. Expected 'mainnet' or 'testnet'.`);
+            }
+            
+            const pumpFunNetwork = network as 'mainnet' | 'testnet';
+            
+            const pumpFunService = createPumpFunService(pumpFunNetwork);
+            const mintKeypair = Keypair.generate();
+            
+            const pumpFunOptions: PumpFunTokenCreationOptions = {
+              tokenMetadata: tokenMetaData,
+              network: pumpFunNetwork,
+              devBuyAmount: tokenMetaData.devBuyAmount || 1,
+              slippage: tokenMetaData.slippage || 10,
+              priorityFee: tokenMetaData.priorityFee || 0.0005,
+              useJitoBundling: tokenMetaData.useJitoBundling || false,
+              imageFile: tokenMetaData.logo
+            };
 
-          if (tokenMetaData.useJitoBundling) {
-            // Use Jito bundling for MEV protection
-            const result = await pumpFunService.createTokenWithJitoBundle(
-              pumpFunOptions,
-              [tempSignerKeypair], // Can add more wallets for bundling
-              mintKeypair
-            );
-            signature = result.signatures[0];
-            mint = new PublicKey(result.mint);
-            metadataUri = ''; // PumpFun handles metadata internally
-          } else {
-            // Standard PumpFun creation
-            const result = await pumpFunService.createTokenLocal(
-              pumpFunOptions,
-              mintKeypair,
-              tempSignerKeypair
-            );
-            signature = result.signature;
-            mint = new PublicKey(result.mint);
-            metadataUri = ''; // PumpFun handles metadata internally
+            if (tokenMetaData.useJitoBundling) {
+              // Use Jito bundling for MEV protection
+              const additionalSigners: Keypair[] = []; // Add additional wallets if needed
+              const result = await pumpFunService.createTokenWithJitoBundle(
+                pumpFunOptions,
+                additionalSigners,
+                mintKeypair
+              );
+              signature = result.signatures[0];
+              mint = new PublicKey(result.mint);
+              metadataUri = ''; // PumpFun handles metadata internally
+            } else {
+              // Use Lightning Transaction API for direct creation
+              const result = await pumpFunService.createTokenWithLightning(
+                pumpFunOptions,
+                mintKeypair
+              );
+              signature = result.signature;
+              mint = new PublicKey(result.mint);
+              metadataUri = ''; // PumpFun handles metadata internally
+            }
+          } catch (pumpFunError) {
+            // Handle PumpFun specific errors
+            const errorMessage = pumpFunError instanceof Error ? pumpFunError.message : 'Unknown PumpFun error';
+            throw new Error(`PumpFun token creation failed: ${errorMessage}`);
           }
         } else {
           // Traditional SPL Token 2022 creation
@@ -181,7 +194,6 @@ const TokenCreation = ({
           if (confirmation.value.err) {
             throw new Error(`Transaction failed during confirmation: ${JSON.stringify(confirmation.value.err)}`);
           }
-        }
 
           // Handle authority revocation in a separate transaction if needed
           if (!tokenMetaData.updateable || !tokenMetaData.mintable) {
@@ -208,6 +220,7 @@ const TokenCreation = ({
               }
             }
           }
+        }
           
           // definite.cryptocreation process - track transaction completion
           const cryptocreationResult = {
@@ -219,9 +232,9 @@ const TokenCreation = ({
           };
           
           // Create explorer URL based on network
-          const explorerUrl = network === 'mainnet' 
-            ? `https://explorer.solana.com/tx/${signature}`
-            : `https://explorer.solana.com/tx/${signature}?cluster=devnet`;
+          const explorerUrl = network === 'mainnet'
+          ? `https://explorer.solana.com/tx/${signature}`
+          : `https://explorer.solana.com/tx/${signature}?cluster=testnet`;
           
         try {
           // Save token data to local storage
@@ -326,7 +339,7 @@ const TokenCreation = ({
               <GradientButton
                 className='w-full sm:w-[200px] h-[54px] justify-self-center'
                 onClick={() => setCurrentProgress(currentProgress + 1)}
-                disabled={!publicKey || !connected}
+                disabled={false}
               >
                 Create Token
               </GradientButton>
