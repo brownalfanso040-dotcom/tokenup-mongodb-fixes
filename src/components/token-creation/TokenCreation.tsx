@@ -173,6 +173,9 @@ const TokenCreation = ({
           });
 
           // Create token creation transaction
+          if (!publicKey) {
+            throw new Error('Wallet not connected for traditional token creation.');
+          }
           const { transaction, signers, mint: tokenMint } = await createTokenCreationTransaction(connection, tokenMetaData, publicKey, metadataUri);
 
           if (!transaction || !tokenMint) {
@@ -197,6 +200,9 @@ const TokenCreation = ({
 
           // Handle authority revocation in a separate transaction if needed
           if (!tokenMetaData.updateable || !tokenMetaData.mintable) {
+            if (!publicKey) {
+              throw new Error('Wallet not connected for authority revocation.');
+            }
             const { transaction: revocationTx } = await createAuthorityRevocationTransaction(
               connection, 
               tokenMetaData, 

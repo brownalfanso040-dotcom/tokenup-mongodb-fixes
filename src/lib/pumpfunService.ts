@@ -270,6 +270,11 @@ export class PumpFunService {
       bundledTxArgs.push({
         publicKey: signer.publicKey.toBase58(),
         action: 'buy',
+        tokenMetadata: {
+          name: metadataResponse.metadata.name,
+          symbol: metadataResponse.metadata.symbol,
+          uri: metadataResponse.metadataUri
+        },
         mint: mintKeypair.publicKey.toBase58(),
         denominatedInSol: 'true',
         amount: 0.1, // Small buy amount
@@ -294,8 +299,8 @@ export class PumpFunService {
     }
 
     const transactions = await response.json();
-    let encodedSignedTransactions: string[] = [];
-    let signatures: string[] = [];
+    const encodedSignedTransactions: string[] = [];
+    const signatures: string[] = [];
 
     // Sign each transaction
     const walletKeypair = Keypair.fromSecretKey(bs58.decode(this.walletPrivateKey));
