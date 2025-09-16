@@ -26,18 +26,22 @@ import {
 } from 'lucide-react';
 import { useNetwork } from '@/context/NetworkContext';
 import { formatNumber, formatCurrency } from '@/lib/utils';
+import { getWalletTrackerDb } from '@/lib/walletTrackerDb';
 
 // Type definitions (moved from lib files to avoid imports)
 interface TrackedWallet {
   address: string;
   name?: string;
+  description?: string;
   network: string;
   isActive: boolean;
   tags: string[];
   createdAt: Date;
   lastUpdated: Date;
+  lastActivity: Date;
   totalValue?: number;
   activityCount?: number;
+  tokenCount?: number;
 }
 
 interface WalletTokenHolding {
@@ -46,7 +50,14 @@ interface WalletTokenHolding {
   symbol: string;
   name: string;
   balance: number;
+  amount: number;
   decimals: number;
+  metadata?: {
+    name?: string;
+    symbol?: string;
+    image?: string;
+    description?: string;
+  };
   usdValue?: number;
   pricePerToken?: number;
   lastUpdated: Date;
@@ -55,6 +66,7 @@ interface WalletTokenHolding {
 interface WalletActivity {
   signature: string;
   address: string;
+  walletAddress: string;
   type: string;
   timestamp: Date;
   amount?: number;
@@ -66,11 +78,15 @@ interface WalletActivity {
 
 interface WalletAlert {
   _id: string;
+  id: string;
   address: string;
+  walletAddress: string;
   type: string;
+  title: string;
   message: string;
   timestamp: Date;
-  read: boolean;
+  createdAt: Date;
+  isRead: boolean;
   network: string;
   severity: 'low' | 'medium' | 'high' | 'critical';
 }

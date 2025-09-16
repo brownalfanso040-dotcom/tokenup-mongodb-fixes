@@ -11,57 +11,58 @@ export async function GET(request: NextRequest) {
     switch (action) {
       case 'stats': {
         const db = await getWalletTrackerDb();
-        const wallets = await db.collections.trackedWallets.find({}).toArray();
-        const alerts = await db.collections.walletAlerts.find({ isRead: false }).toArray();
+        const stats = await db.getWalletStats();
         
-        const stats = {
-          totalWallets: wallets.length,
-          activeWallets: wallets.filter((w: TrackedWallet) => w.isActive).length,
-          totalValue: wallets.reduce((sum: number, w: TrackedWallet) => sum + (w.totalValue || 0), 0),
-          totalActivities: wallets.reduce((sum: number, w: TrackedWallet) => sum + (w.activityCount || 0), 0),
-          unreadAlerts: alerts.length,
-        };
-
-        return NextResponse.json(stats);
+        // Get additional stats that aren't in the basic stats
+        const wallets = await db.getAllWallets();
+        const totalValue = wallets.reduce((sum: number, w: TrackedWallet) => sum + (w.totalValue || 0), 0);
+        const totalActivitiesFromWallets = wallets.reduce((sum: number, w: TrackedWallet) => sum + (w.activityCount || 0), 0);
+        
+        return NextResponse.json({
+          ...stats,
+          totalValue,
+          totalActivities: Math.max(stats.totalActivities, totalActivitiesFromWallets)
+        });
       }
 
       case 'wallets': {
         const db = await getWalletTrackerDb();
-        const wallets = await db.collections.trackedWallets.find({}).toArray();
+        const wallets = await db.getAllWallets();
         return NextResponse.json(wallets);
       }
 
       case 'alerts': {
         const db = await getWalletTrackerDb();
-        const alerts = await db.collections.walletAlerts.find({}).sort({ createdAt: -1 }).toArray();
+        const alerts = await db.getWalletAlerts();
         return NextResponse.json(alerts);
       }
 
       case 'wallet-holdings': {
-        const address = searchParams.get('address');
-        if (!address) {
-          return NextResponse.json({ error: 'Address required' }, { status: 400 });
+        const walletAddress = searchParams.get('address');
+        if (!walletAddress) {
+          return NextResponse.json({ error: 'Wallet address is required' }, { status: 400 });
         }
-        
+
         const db = await getWalletTrackerDb();
-        const holdings = await db.collections.walletHoldings.find({ walletAddress: address }).toArray();
+        const holdings = await db.getWalletHoldings(walletAddress);
         return NextResponse.json(holdings);
       }
 
       case 'wallet-activities': {
-        const address = searchParams.get('address');
-        const limit = parseInt(searchParams.get('limit') || '100');
+        const walletAddress = searchParams.get('address');
+        const limitParam = searchParams.get('limit');
+        const offsetParam = searchParams.get('offset');
         
-        if (!address) {
-          return NextResponse.json({ error: 'Address required' }, { status: 400 });
+        if (!walletAddress) {
+          return NextResponse.json({ error: 'Wallet address is required' }, { status: 400 });
         }
-        
+
+        const limit = limitParam ? parseInt(limitParam) : 100;
+        const offset = offsetParam ? parseInt(offsetParam) : 0;
+
         const db = await getWalletTrackerDb();
-        const activities = await db.collections.walletActivities
-          .find({ walletAddress: address })
-          .sort({ timestamp: -1 })
-          .limit(limit)
-          .toArray();
+        const activities = await db.getWalletActivities(walletAddress, limit, offset);
+        
         return NextResponse.json(activities);
       }
 
@@ -100,11 +101,11 @@ export async function POST(request: NextRequest) {
 
       case 'markAlertRead': {
         const db = await getWalletTrackerDb();
-        await db.collections.walletAlerts.updateOne(
-          { _id: data.alertId },
-          { $set: { isRead: true } }
-        );
-        return NextResponse.json({ success: true });
+        const success = await db.markAlertAsRead(data.alertId);
+        return NextResponse.json({ 
+          success,
+          modified: success ? 1 : 0
+        });
       }
 
       case 'refreshWallet': {
