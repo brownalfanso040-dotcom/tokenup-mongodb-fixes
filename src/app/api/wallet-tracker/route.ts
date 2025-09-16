@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getWalletTracker } from '@/lib/walletTracker';
 import { getWalletTrackerDb } from '@/lib/walletTrackerDb';
+import { TrackedWallet } from '@/lib/walletTracker';
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,14 +11,14 @@ export async function GET(request: NextRequest) {
     switch (action) {
       case 'stats': {
         const db = await getWalletTrackerDb();
-        const wallets = await db.collection('wallets').find({}).toArray();
-        const alerts = await db.collection('alerts').find({ read: false }).toArray();
+        const wallets = await db.collections.trackedWallets.find({}).toArray();
+        const alerts = await db.collections.walletAlerts.find({ isRead: false }).toArray();
         
         const stats = {
           totalWallets: wallets.length,
-          activeWallets: wallets.filter(w => w.isActive).length,
-          totalValue: wallets.reduce((sum, w) => sum + (w.totalValue || 0), 0),
-          totalActivities: wallets.reduce((sum, w) => sum + (w.activityCount || 0), 0),
+          activeWallets: wallets.filter((w: TrackedWallet) => w.isActive).length,
+          totalValue: wallets.reduce((sum: number, w: TrackedWallet) => sum + (w.totalValue || 0), 0),
+          totalActivities: wallets.reduce((sum: number, w: TrackedWallet) => sum + (w.activityCount || 0), 0),
           unreadAlerts: alerts.length,
         };
 
@@ -26,13 +27,13 @@ export async function GET(request: NextRequest) {
 
       case 'wallets': {
         const db = await getWalletTrackerDb();
-        const wallets = await db.collection('wallets').find({}).toArray();
+        const wallets = await db.collections.trackedWallets.find({}).toArray();
         return NextResponse.json(wallets);
       }
 
       case 'alerts': {
         const db = await getWalletTrackerDb();
-        const alerts = await db.collection('alerts').find({}).sort({ timestamp: -1 }).toArray();
+        const alerts = await db.collections.walletAlerts.find({}).sort({ createdAt: -1 }).toArray();
         return NextResponse.json(alerts);
       }
 
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest) {
         }
         
         const db = await getWalletTrackerDb();
-        const holdings = await db.collection('holdings').find({ address }).toArray();
+        const holdings = await db.collections.walletHoldings.find({ walletAddress: address }).toArray();
         return NextResponse.json(holdings);
       }
 
@@ -56,8 +57,8 @@ export async function GET(request: NextRequest) {
         }
         
         const db = await getWalletTrackerDb();
-        const activities = await db.collection('activities')
-          .find({ address })
+        const activities = await db.collections.walletActivities
+          .find({ walletAddress: address })
           .sort({ timestamp: -1 })
           .limit(limit)
           .toArray();
@@ -93,15 +94,15 @@ export async function POST(request: NextRequest) {
 
       case 'updateWallet': {
         const tracker = await getWalletTracker();
-        const result = await tracker.updateWallet(data.address, data.updates);
+        const result = await tracker.updateWalletInfo(data.address, data.updates);
         return NextResponse.json(result);
       }
 
       case 'markAlertRead': {
         const db = await getWalletTrackerDb();
-        await db.collection('alerts').updateOne(
+        await db.collections.walletAlerts.updateOne(
           { _id: data.alertId },
-          { $set: { read: true } }
+          { $set: { isRead: true } }
         );
         return NextResponse.json({ success: true });
       }

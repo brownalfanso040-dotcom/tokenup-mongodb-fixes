@@ -14,6 +14,8 @@ export interface TrackedWallet {
   lastUpdated: Date;
   lastActivity: Date;
   tokenCount: number;
+  totalValue?: number;
+  activityCount?: number;
   network: NetworkType;
 }
 
